@@ -180,6 +180,28 @@ struct DocumentBuild: Identifiable {
 
 ---
 
+### Step 9: UI Improvements
+
+**What we build**: Let the user tear the main panel off from the menu bar icon so that is a floating window.
+
+**SwiftUI concepts introduced**:
+- Tear off menu bar items to create floating windows.
+
+**Milestone**: Visually polished menu bar app with better user experience.
+
+---
+
+### Step 10: Configure n-doc directories
+
+**What we build**: Add a directory picker to the menu bar app in which the user can select their n-doc directories. This can be used to filter the processes to only show those that are running in the selected directories. We would not need the marker file approach anymore. The selected directories will be stored in `UserDefaults`.
+
+**SwiftUI concepts introduced**:
+- Final polish and testing.
+
+**Milestone**: The app gains the ability to filter processes by directory. Preferences are saved between launches.
+
+---
+
 ## Technical notes
 
 ### Process monitoring approach
