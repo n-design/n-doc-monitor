@@ -31,22 +31,22 @@ struct MonitorView: View {
                     .font(.system(size: 28))
                     .foregroundStyle(.orange)
 
-                ForEach(monitor.activeBuilds, id: \.makePID) { build in
-                    HStack {
-                        Image(systemName: "folder.fill")
-                            .foregroundStyle(.blue)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("n-doc build detected")
-                                .font(.headline)
-                            Text("PID \(build.makePID)")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                            Text(build.repoPath)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
-                                .truncationMode(.head)
-                        }
+                if monitor.documentBuilds.isEmpty {
+                    // Build detected but no latexmk processes yet
+                    // (make is still in early setup phase)
+                    Text("Build starting…")
+                        .font(.headline)
+                    ForEach(monitor.activeBuilds, id: \.makePID) { build in
+                        Text(build.repoPath)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                            .truncationMode(.head)
+                    }
+                } else {
+                    // Show each document being typeset
+                    ForEach(monitor.documentBuilds) { doc in
+                        DocumentBuildRow(document: doc)
                     }
                 }
             } else {

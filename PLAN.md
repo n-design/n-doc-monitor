@@ -84,7 +84,7 @@ Each step is incremental and introduces specific SwiftUI / macOS concepts.
 
 ---
 
-### Step 4: Walk the process tree — find latexmk and lualatex
+### Step 4: Walk the process tree — find latexmk and lualatex ✅
 
 **What we build**: From the root `make` PID, walk the child process tree to find:
 1. **latexmk processes** — each represents one document being typeset.
