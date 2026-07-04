@@ -1,49 +1,81 @@
 import SwiftUI
+import Combine
 
 /// The main entry point for n-doc-monitor.
 ///
 /// This app lives entirely in the macOS menu bar — there is no main window
-/// and no Dock icon.  Clicking the menu bar icon opens a panel showing
-/// the current build status.
+/// and no Dock icon.  Clicking the menu bar icon opens a floating panel
+/// showing the current build status.
 ///
 /// **SwiftUI concepts used here:**
 /// - `@main` marks this struct as the application entry point.
-/// - `MenuBarExtra` is a *Scene* that places an icon in the menu bar
-///   instead of opening a window.  The first argument is the title
-///   (used for accessibility), `systemImage` sets the SF Symbol icon,
-///   and the trailing closure provides the view shown when the user
-///   clicks the icon.
 ///
-/// **New in Step 3:**
-/// - `@StateObject` creates and *owns* an `ObservableObject`.  The
-///   object's lifetime is tied to this view hierarchy — SwiftUI keeps
-///   it alive and re-renders views when its `@Published` properties
-///   change.  Use `@StateObject` for the *first* (owning) reference
-///   and `@ObservedObject` or `@EnvironmentObject` for downstream views.
+/// **Step 9 — Floating Window:**
+/// We replaced `MenuBarExtra` with a custom `StatusItemController`
+/// backed by `NSStatusItem` + `FloatingPanel`.  This gives us full
+/// control over window behaviour:
+/// - The panel stays visible when you click outside it.
+/// - It floats above other windows.
+/// - It can be dragged anywhere.
+/// - A "reset position" button snaps it back under the menu bar icon.
+///
+/// **AppKit concept — `NSApplicationDelegateAdaptor`:**
+/// Since we no longer have a `MenuBarExtra` scene, we need an
+/// `NSApplicationDelegate` to set up the status item when the app
+/// launches.  `@NSApplicationDelegateAdaptor` bridges AppKit's
+/// delegate pattern into SwiftUI's app lifecycle.
 @main
 struct NDocMonitorApp: App {
-    /// The shared build monitor — created once, lives for the app's lifetime.
-    @StateObject private var monitor = BuildMonitor()
-
-    /// The SF Symbol icon changes based on build state:
-    /// - Idle: `doc.text.magnifyingglass` (outline)
-    /// - Building: `doc.text.magnifyingglass` with a filled style
-    ///   isn't available, so we switch to `hammer.fill`.
-    ///
-    /// **SwiftUI concept — computed properties in the body:**
-    /// `MenuBarExtra` accepts a `systemImage` string, so we use a
-    /// computed property to pick the right icon dynamically.
-    private var menuBarIcon: String {
-        monitor.isBuildActive ? "hammer.fill" : "doc.text.magnifyingglass"
-    }
+    /// Bridge to AppKit's application delegate.
+    @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
     var body: some Scene {
-        // MenuBarExtra creates a menu-bar-only app.
-        // .window style gives us a detachable panel (as opposed to a
-        // pull-down menu).
-        MenuBarExtra("n-doc monitor", systemImage: menuBarIcon) {
-            MonitorView(monitor: monitor)
+        // No visible scenes — everything is managed by the
+        // StatusItemController via the AppDelegate.
+        Settings { EmptyView() }
+    }
+}
+
+/// The AppKit application delegate that owns the status item and monitor.
+///
+/// **Why a delegate instead of `MenuBarExtra`?**
+/// `MenuBarExtra(.window)` auto-dismisses the panel on focus loss.
+/// We need the panel to persist as a floating window.  Using
+/// `NSApplicationDelegate` + `StatusItemController` gives us that
+/// control while still hosting SwiftUI views inside the panel.
+@MainActor
+final class AppDelegate: NSObject, NSApplicationDelegate {
+
+    private let monitor = BuildMonitor()
+    private let statusItemController = StatusItemController()
+    private var cancellables = Set<AnyCancellable>()
+
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        // Hide the Dock icon — this app lives only in the menu bar.
+        // With `MenuBarExtra` this was automatic; with a custom
+        // `NSStatusItem` we need to set it explicitly.
+        NSApp.setActivationPolicy(.accessory)
+        // Set up the status item with the initial monitor view.
+        statusItemController.setUp(icon: "doc.text.magnifyingglass") { [weak self] in
+            MonitorView(
+                monitor: self?.monitor ?? BuildMonitor(),
+                onResetPosition: { self?.statusItemController.resetPanelPosition() },
+                onQuit: { NSApp.terminate(nil) }
+            )
         }
-        .menuBarExtraStyle(.window)
+
+        // Start monitoring.
+        monitor.startMonitoring()
+
+        // Update the menu bar icon when build state changes.
+        monitor.$activeBuilds
+            .receive(on: RunLoop.main)
+            .sink { [weak self] builds in
+                let icon = builds.isEmpty
+                    ? "doc.text.magnifyingglass"
+                    : "hammer.fill"
+                self?.statusItemController.updateIcon(icon)
+            }
+            .store(in: &cancellables)
     }
 }

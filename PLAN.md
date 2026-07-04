@@ -167,7 +167,6 @@ struct DocumentBuild: Identifiable {
 
 - **Launch at login** (optional, user-configurable via `SMAppService`).
 - **About panel** with version info.
-- **Quit menu item**.
 - **App icon**.
 - **Code signing** for local development (no distribution outside App Store planned initially).
 
@@ -180,7 +179,7 @@ struct DocumentBuild: Identifiable {
 
 ---
 
-### Step 9: UI Improvements: Floating Window
+### Step 9: UI Improvements: Floating Window ✅
 
 **What we build**: Let the user tear the main panel off from the menu bar icon so that is a floating window.
 

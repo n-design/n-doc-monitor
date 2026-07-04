@@ -23,6 +23,14 @@ import SwiftUI
 struct MonitorView: View {
     @ObservedObject var monitor: BuildMonitor
 
+    /// Callback to reset the panel position under the menu bar icon.
+    /// `nil` when running inside `MenuBarExtra` (position is automatic).
+    var onResetPosition: (() -> Void)? = nil
+
+    /// Callback to quit the application.
+    /// `nil` hides the quit button (e.g. in tests or previews).
+    var onQuit: (() -> Void)? = nil
+
     /// A timer that fires every second to update the elapsed-time display.
     ///
     /// **SwiftUI concept — `TimelineView`:**
@@ -40,6 +48,13 @@ struct MonitorView: View {
                 completedBuildView(completed)
             } else {
                 idleView
+            }
+
+            // Toolbar: reset position + quit
+            if onResetPosition != nil || onQuit != nil {
+                Divider()
+                    .padding(.top, 8)
+                toolbarView
             }
         }
         .padding(16)
@@ -161,6 +176,40 @@ struct MonitorView: View {
                 .foregroundStyle(.tertiary)
         }
         .padding(.vertical, 8)
+    }
+
+    // MARK: - Toolbar
+
+    /// **Step 9 — action buttons at the bottom of the panel.**
+    ///
+    /// **SwiftUI concept — `Button` with closures:**
+    /// The `action` parameter is a closure that runs when the button
+    /// is clicked.  We use optional closures from the parent so the
+    /// toolbar adapts to different hosting contexts.
+    @ViewBuilder
+    private var toolbarView: some View {
+        HStack {
+            if let resetAction = onResetPosition {
+                Button(action: resetAction) {
+                    Label("Reset Position", systemImage: "arrow.uturn.backward")
+                        .font(.caption)
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            if let quitAction = onQuit {
+                Button(action: quitAction) {
+                    Label("Quit", systemImage: "xmark.circle")
+                        .font(.caption)
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.top, 6)
     }
 
     // MARK: - Helpers
