@@ -12,13 +12,16 @@ import SwiftUI
 struct DocumentBuildRow: View {
     let document: DocumentBuild
 
+    /// Read the user's accent color from `UserDefaults`.
+    @AppStorage("accentColor") private var accentColor: Color = defaultAccentColor
+
     var body: some View {
         HStack(spacing: 8) {
             // Activity indicator
             Image(systemName: document.isRunning
                   ? "circle.fill"
                   : "checkmark.circle.fill")
-                .foregroundStyle(document.isRunning ? .orange : .green)
+                .foregroundStyle(document.isRunning ? accentColor : .green)
                 .font(.caption)
                 .frame(width: 14)
 
@@ -32,7 +35,7 @@ struct DocumentBuildRow: View {
                 Text("Run \(document.runCount)")
                     .font(.caption.weight(.medium))
                     .monospacedDigit()
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(accentColor)
             } else if document.runCount > 0 {
                 Text("\(document.runCount) run\(document.runCount == 1 ? "" : "s")")
                     .font(.caption)

@@ -32,14 +32,7 @@ struct NDocMonitorApp: App {
     var body: some Scene {
         // No visible scenes — everything is managed by the
         // StatusItemController via the AppDelegate.
-        //
-        // **Step 8 — Settings scene:**
-        // The `Settings` scene creates a standard macOS Preferences
-        // window.  It's accessible programmatically via
-        // `NSApp.sendAction(Selector(("showSettingsWindow:")))`.
-        Settings {
-            SettingsView()
-        }
+        Settings { EmptyView() }
     }
 }
 
@@ -55,6 +48,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private let monitor = BuildMonitor()
     private let statusItemController = StatusItemController()
+    private var settingsWindow: NSPanel?
     private var cancellables = Set<AnyCancellable>()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -64,11 +58,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.setActivationPolicy(.accessory)
         // Set up the status item with the initial monitor view.
         statusItemController.setUp(icon: "doc.text.magnifyingglass") { [weak self] in
-            MonitorView(
-                monitor: self?.monitor ?? BuildMonitor(),
-                onResetPosition: { self?.statusItemController.resetPanelPosition() },
+            let delegate = self
+            return MonitorView(
+                monitor: delegate?.monitor ?? BuildMonitor(),
+                onResetPosition: { delegate?.statusItemController.resetPanelPosition() },
                 onShowAbout: { Self.showAboutPanel() },
-                onShowSettings: { Self.showSettingsWindow() },
+                onShowSettings: { delegate?.showSettingsWindow() },
                 onQuit: { NSApp.terminate(nil) }
             )
         }
@@ -115,15 +110,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         ])
     }
 
-    /// Open the SwiftUI Settings window.
+    /// Open the app's settings window.
     ///
-    /// **Step 8 — opening Settings programmatically:**
-    /// SwiftUI's `Settings` scene creates a window that responds to
-    /// the `showSettingsWindow:` selector.  We send that action to
-    /// the first responder, which lets the SwiftUI framework handle
-    /// presenting it.
-    static func showSettingsWindow() {
+    /// We host `SettingsView` in its own `NSPanel`, created lazily.
+    /// This avoids the `Settings` scene issues with accessory apps.
+    func showSettingsWindow() {
+        if let existing = settingsWindow, existing.isVisible {
+            existing.orderFrontRegardless()
+            return
+        }
+
+        let panel = NSPanel(
+            contentRect: NSRect(x: 0, y: 0, width: 350, height: 280),
+            styleMask: [.titled, .closable, .fullSizeContentView],
+            backing: .buffered,
+            defer: false
+        )
+        panel.title = "n-doc monitor Settings"
+        panel.level = .floating
+        panel.hidesOnDeactivate = false
+        panel.contentView = NSHostingView(rootView: SettingsView())
+        panel.center()
         NSApp.activate(ignoringOtherApps: true)
-        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+        panel.makeKeyAndOrderFront(nil)
+        self.settingsWindow = panel
     }
 }

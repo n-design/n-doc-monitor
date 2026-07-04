@@ -26,6 +26,14 @@ struct SettingsView: View {
     /// registration with the system is done via `SMAppService`.
     @AppStorage("launchAtLogin") private var launchAtLogin = false
 
+    /// The user's chosen accent color.
+    ///
+    /// **SwiftUI concept — `@AppStorage` with custom `RawRepresentable`:**
+    /// Because `Color` conforms to `RawRepresentable` (via our extension
+    /// in `AccentColor.swift`), we can store it directly in `UserDefaults`.
+    /// Every view that reads this key will update automatically.
+    @AppStorage("accentColor") private var accentColor: Color = defaultAccentColor
+
     var body: some View {
         Form {
             Section {
@@ -36,9 +44,22 @@ struct SettingsView: View {
             } header: {
                 Label("General", systemImage: "gear")
             }
+
+            Section {
+                ColorPicker("Accent color", selection: $accentColor, supportsOpacity: false)
+
+                if accentColor != defaultAccentColor {
+                    Button("Reset to default") {
+                        accentColor = defaultAccentColor
+                    }
+                    .font(.caption)
+                }
+            } header: {
+                Label("Appearance", systemImage: "paintbrush")
+            }
         }
         .formStyle(.grouped)
-        .frame(width: 350, height: 120)
+        .frame(width: 350, height: 280)
         .onAppear {
             syncLaunchAtLoginState()
         }

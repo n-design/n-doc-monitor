@@ -23,6 +23,14 @@ import SwiftUI
 struct MonitorView: View {
     @ObservedObject var monitor: BuildMonitor
 
+    /// The user's chosen accent color, stored in `UserDefaults`.
+    ///
+    /// **Step 11 — Configurable accent color:**
+    /// Both `MonitorView` and `DocumentBuildRow` read this same key.
+    /// When the user changes the color in Settings, every view that
+    /// uses `@AppStorage("accentColor")` re-renders automatically.
+    @AppStorage("accentColor") private var accentColor: Color = defaultAccentColor
+
     /// Callback to reset the panel position under the menu bar icon.
     /// `nil` when running inside `MenuBarExtra` (position is automatic).
     var onResetPosition: (() -> Void)? = nil
@@ -80,7 +88,7 @@ struct MonitorView: View {
         HStack(spacing: 8) {
             Image(systemName: "hammer.fill")
                 .font(.title2)
-                .foregroundStyle(.orange)
+                .foregroundStyle(accentColor)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text("Build in progress")
@@ -102,7 +110,7 @@ struct MonitorView: View {
                 .foregroundStyle(.white)
                 .padding(.horizontal, 6)
                 .padding(.vertical, 2)
-                .background(Capsule().fill(.orange))
+                .background(Capsule().fill(accentColor))
         }
         .padding(.bottom, 10)
 
@@ -197,7 +205,7 @@ struct MonitorView: View {
                 Button(action: resetAction) {
                     Image(systemName: "arrow.uturn.backward")
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.borderless)
                 .foregroundStyle(.secondary)
                 .help("Reset window position")
             }
@@ -206,7 +214,7 @@ struct MonitorView: View {
                 Button(action: aboutAction) {
                     Image(systemName: "info.circle")
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.borderless)
                 .foregroundStyle(.secondary)
                 .help("About n-doc monitor")
             }
@@ -215,7 +223,7 @@ struct MonitorView: View {
                 Button(action: settingsAction) {
                     Image(systemName: "gear")
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.borderless)
                 .foregroundStyle(.secondary)
                 .help("Settings")
             }
@@ -226,7 +234,7 @@ struct MonitorView: View {
                 Button(action: quitAction) {
                     Image(systemName: "xmark.circle")
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.borderless)
                 .foregroundStyle(.secondary)
                 .help("Quit n-doc monitor")
             }

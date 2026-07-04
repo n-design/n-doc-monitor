@@ -202,7 +202,7 @@ struct DocumentBuild: Identifiable {
 
 ---
 
-### Step 11: UI Improvements: Configure accent color
+### Step 11: UI Improvements: Configure accent color ✅
 
 **What we build**: Let the user configure the accent color from orange to something else.
 
