@@ -41,6 +41,16 @@ final class BuildMonitor: ObservableObject {
     /// and whether lualatex is currently running.
     @Published private(set) var documentBuilds: [DocumentBuild] = []
 
+    /// Summary of the last completed build, shown briefly before
+    /// returning to the idle state.
+    ///
+    /// **Step 7 — robustness:**
+    /// When a build finishes (root make exits), we keep a snapshot
+    /// of the final document states so the UI can show "Build
+    /// finished — 10 documents, 3 runs each" for a few seconds
+    /// before clearing to idle.
+    @Published private(set) var lastCompletedBuild: CompletedBuild?
+
     /// Convenience: `true` when at least one build is running.
     var isBuildActive: Bool { !activeBuilds.isEmpty }
 
@@ -54,6 +64,12 @@ final class BuildMonitor: ObservableObject {
     /// detect when a *new* lualatex run starts (different PID = new run).
     /// Also tracks accumulated run counts that survive across snapshots.
     private var trackedDocuments: [pid_t: DocumentBuild] = [:]
+
+    /// Cancellable for the "build finished" dismiss timer.
+    private var dismissCancellable: AnyCancellable?
+
+    /// How long the "build finished" summary stays visible.
+    private let dismissDelay: TimeInterval = 8.0
 
     init(pollInterval: TimeInterval = 2.0) {
         self.pollInterval = pollInterval
@@ -75,28 +91,58 @@ final class BuildMonitor: ObservableObject {
     func stopMonitoring() {
         timerCancellable?.cancel()
         timerCancellable = nil
+        dismissCancellable?.cancel()
+        dismissCancellable = nil
         activeBuilds = []
         documentBuilds = []
         trackedDocuments = [:]
+        lastCompletedBuild = nil
     }
 
     /// Perform a single scan right now.
+    ///
+    /// **Step 7 — robustness:**
+    /// Uses `BuildDetector.fullScan()` which takes a single process
+    /// snapshot, ensuring make-detection and tree-walking see the
+    /// same set of processes.
+    ///
+    /// Also detects the build→idle transition and captures a
+    /// `CompletedBuild` summary that the UI can show briefly.
     func scan() {
-        activeBuilds = BuildDetector.detectBuilds()
+        let previouslyActive = isBuildActive
+        let previousDocuments = documentBuilds
 
-        // For each detected build, walk the tree to find documents.
-        var newSnapshots: [DocumentBuild] = []
-        for build in activeBuilds {
-            let snapshots = BuildDetector.scanDocumentBuilds(for: build)
-            newSnapshots.append(contentsOf: snapshots)
-        }
+        let result = BuildDetector.fullScan()
+        activeBuilds = result.builds
 
         // Merge snapshots with our tracked state to preserve run counts.
-        documentBuilds = mergeSnapshots(newSnapshots)
+        documentBuilds = mergeSnapshots(result.documents)
 
         // Clean up tracked documents that are no longer present.
         let activePIDs = Set(documentBuilds.map(\.id))
         trackedDocuments = trackedDocuments.filter { activePIDs.contains($0.key) }
+
+        // Detect build→idle transition.
+        if previouslyActive && !isBuildActive && !previousDocuments.isEmpty {
+            lastCompletedBuild = CompletedBuild(
+                repoPath: "", // Could be multiple repos; UI can check
+                documents: previousDocuments.map { doc in
+                    CompletedBuild.DocumentSummary(
+                        name: doc.name,
+                        totalRuns: doc.runCount
+                    )
+                },
+                finishedAt: Date()
+            )
+
+            // Auto-dismiss after a delay.
+            dismissCancellable?.cancel()
+            dismissCancellable = Just(())
+                .delay(for: .seconds(dismissDelay), scheduler: RunLoop.main)
+                .sink { [weak self] _ in
+                    self?.lastCompletedBuild = nil
+                }
+        }
     }
 
     /// Feed a list of document snapshots directly (for testing).
@@ -107,6 +153,38 @@ final class BuildMonitor: ObservableObject {
         documentBuilds = mergeSnapshots(snapshots)
         let activePIDs = Set(documentBuilds.map(\.id))
         trackedDocuments = trackedDocuments.filter { activePIDs.contains($0.key) }
+    }
+
+    /// Simulate a complete scan cycle with synthetic data (for testing).
+    ///
+    /// This drives the same transition logic as `scan()` but with
+    /// controlled inputs instead of live processes.
+    func simulateScanResult(
+        builds: [BuildDetector.DetectedBuild],
+        documents: [DocumentBuild]
+    ) {
+        let previouslyActive = isBuildActive
+        let previousDocuments = documentBuilds
+
+        activeBuilds = builds
+        documentBuilds = mergeSnapshots(documents)
+
+        let activePIDs = Set(documentBuilds.map(\.id))
+        trackedDocuments = trackedDocuments.filter { activePIDs.contains($0.key) }
+
+        // Detect build→idle transition.
+        if previouslyActive && !isBuildActive && !previousDocuments.isEmpty {
+            lastCompletedBuild = CompletedBuild(
+                repoPath: builds.first?.repoPath ?? "",
+                documents: previousDocuments.map { doc in
+                    CompletedBuild.DocumentSummary(
+                        name: doc.name,
+                        totalRuns: doc.runCount
+                    )
+                },
+                finishedAt: Date()
+            )
+        }
     }
 
     /// Merge fresh snapshots with previously tracked state.

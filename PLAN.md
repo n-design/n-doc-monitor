@@ -147,7 +147,7 @@ struct DocumentBuild: Identifiable {
 
 ---
 
-### Step 7: Handle edge cases and robustness
+### Step 7: Handle edge cases and robustness ✅
 
 **What we build**: Handle real-world scenarios:
 

@@ -106,6 +106,28 @@ enum ProcessScanner {
         listAllPIDs().compactMap { getProcessInfo(pid: $0) }
     }
 
+    /// A consistent point-in-time view of all processes and their tree.
+    ///
+    /// **Step 7 — robustness fix:**
+    /// Previously, `allProcesses()` and `buildProcessTree()` each
+    /// called `listAllPIDs()` independently, creating a window where
+    /// processes could appear or disappear between the two scans.
+    /// This struct captures everything in a single PID enumeration.
+    struct Snapshot {
+        let processes: [ProcessInfo]
+        let tree: [pid_t: [pid_t]]
+    }
+
+    /// Take a single consistent snapshot of all processes.
+    static func snapshot() -> Snapshot {
+        let infos = allProcesses()
+        var tree: [pid_t: [pid_t]] = [:]
+        for info in infos {
+            tree[info.ppid, default: []].append(info.pid)
+        }
+        return Snapshot(processes: infos, tree: tree)
+    }
+
     /// Find all descendants of a given PID using a pre-built tree.
     static func descendants(of pid: pid_t, in tree: [pid_t: [pid_t]]) -> [pid_t] {
         var result: [pid_t] = []

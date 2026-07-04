@@ -49,6 +49,25 @@ struct MonitorView: View {
                         DocumentBuildRow(document: doc)
                     }
                 }
+            } else if let completed = monitor.lastCompletedBuild {
+                // Build just finished — show summary briefly
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 28))
+                    .foregroundStyle(.green)
+
+                Text("Build finished")
+                    .font(.headline)
+
+                ForEach(completed.documents, id: \.name) { doc in
+                    HStack(spacing: 4) {
+                        Text(doc.name)
+                            .font(.subheadline)
+                        Spacer()
+                        Text("\(doc.totalRuns) run\(doc.totalRuns == 1 ? "" : "s")")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
             } else {
                 // Idle state
                 Image(systemName: "doc.text.magnifyingglass")

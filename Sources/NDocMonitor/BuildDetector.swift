@@ -42,6 +42,34 @@ enum BuildDetector {
         return findNDocMakeProcesses(in: allProcs)
     }
 
+    /// A complete scan result: detected builds + per-document detail.
+    ///
+    /// **Step 7 — robustness:**
+    /// Uses a single `ProcessScanner.snapshot()` so that the make-
+    /// detection and tree-walking phases see the exact same set of
+    /// processes.  This eliminates a race window where a process
+    /// could appear or disappear between two independent scans.
+    struct ScanResult {
+        let builds: [DetectedBuild]
+        let documents: [DocumentBuild]
+    }
+
+    /// Perform a full scan using a single consistent process snapshot.
+    static func fullScan() -> ScanResult {
+        let snap = ProcessScanner.snapshot()
+        let builds = findNDocMakeProcesses(in: snap.processes)
+        var documents: [DocumentBuild] = []
+        for build in builds {
+            let docs = findDocumentBuilds(
+                rootMakePID: build.makePID,
+                allProcesses: snap.processes,
+                processTree: snap.tree
+            )
+            documents.append(contentsOf: docs)
+        }
+        return ScanResult(builds: builds, documents: documents)
+    }
+
     /// Testable core: given a list of process snapshots, return the
     /// ones that look like n-doc root `make` processes.
     ///
@@ -158,13 +186,15 @@ enum BuildDetector {
 
     /// Convenience: scan live processes for document builds under a
     /// detected n-doc build.
+    ///
+    /// **Note:** Prefer `fullScan()` when you need both builds and
+    /// documents — it uses a single snapshot and avoids races.
     static func scanDocumentBuilds(for build: DetectedBuild) -> [DocumentBuild] {
-        let allProcs = ProcessScanner.allProcesses()
-        let tree = ProcessScanner.buildProcessTree()
+        let snap = ProcessScanner.snapshot()
         return findDocumentBuilds(
             rootMakePID: build.makePID,
-            allProcesses: allProcs,
-            processTree: tree
+            allProcesses: snap.processes,
+            processTree: snap.tree
         )
     }
 
