@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Bundle identifiers -->
+    <key>CFBundleIdentifier</key>
+    <string>com.ndoc.monitor</string>
+    <key>CFBundleName</key>
+    <string>n-doc monitor</string>
+    <key>CFBundleDisplayName</key>
+    <string>n-doc monitor</string>
+
+    <!-- Version info -->
+    <key>CFBundleShortVersionString</key>
+    <string>1.0.0</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+
+    <!-- Executable -->
+    <key>CFBundleExecutable</key>
+    <string>NDocMonitor</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+
+    <!-- App icon (empty until we add one) -->
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
+
+    <!-- macOS app settings -->
+    <key>LSMinimumSystemVersion</key>
+    <string>15.0</string>
+    <key>LSUIElement</key>
+    <true/>
+    <key>NSHighResolutionCapable</key>
+    <true/>
+
+    <!-- Principal class for SwiftUI app lifecycle -->
+    <key>NSPrincipalClass</key>
+    <string>NSApplication</string>
+</dict>
+</plist>
