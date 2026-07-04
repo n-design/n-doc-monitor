@@ -50,7 +50,7 @@ Each step is incremental and introduces specific SwiftUI / macOS concepts.
 
 ---
 
-### Step 2: Process scanner — enumerate running processes
+### Step 2: Process scanner — enumerate running processes ✅
 
 **What we build**: A Swift class `ProcessScanner` that uses macOS `libproc` C APIs to list running processes, get their names, PIDs, parent PIDs, and working directories.
 
