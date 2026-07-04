@@ -54,6 +54,13 @@ final class BuildMonitor: ObservableObject {
     /// Convenience: `true` when at least one build is running.
     var isBuildActive: Bool { !activeBuilds.isEmpty }
 
+    /// When the current build was first detected.
+    ///
+    /// **Step 6 — UI polish:**
+    /// Set when we transition from idle→active, cleared when the
+    /// build finishes.  The UI uses this to display elapsed time.
+    @Published private(set) var buildStartedAt: Date?
+
     /// The polling interval in seconds.
     let pollInterval: TimeInterval
 
@@ -97,6 +104,7 @@ final class BuildMonitor: ObservableObject {
         documentBuilds = []
         trackedDocuments = [:]
         lastCompletedBuild = nil
+        buildStartedAt = nil
     }
 
     /// Perform a single scan right now.
@@ -122,6 +130,12 @@ final class BuildMonitor: ObservableObject {
         let activePIDs = Set(documentBuilds.map(\.id))
         trackedDocuments = trackedDocuments.filter { activePIDs.contains($0.key) }
 
+        // Detect idle→active transition.
+        if !previouslyActive && isBuildActive {
+            buildStartedAt = Date()
+            lastCompletedBuild = nil
+        }
+
         // Detect build→idle transition.
         if previouslyActive && !isBuildActive && !previousDocuments.isEmpty {
             lastCompletedBuild = CompletedBuild(
@@ -134,6 +148,7 @@ final class BuildMonitor: ObservableObject {
                 },
                 finishedAt: Date()
             )
+            buildStartedAt = nil
 
             // Auto-dismiss after a delay.
             dismissCancellable?.cancel()
@@ -172,6 +187,12 @@ final class BuildMonitor: ObservableObject {
         let activePIDs = Set(documentBuilds.map(\.id))
         trackedDocuments = trackedDocuments.filter { activePIDs.contains($0.key) }
 
+        // Detect idle→active transition.
+        if !previouslyActive && isBuildActive {
+            buildStartedAt = Date()
+            lastCompletedBuild = nil
+        }
+
         // Detect build→idle transition.
         if previouslyActive && !isBuildActive && !previousDocuments.isEmpty {
             lastCompletedBuild = CompletedBuild(
@@ -184,6 +205,7 @@ final class BuildMonitor: ObservableObject {
                 },
                 finishedAt: Date()
             )
+            buildStartedAt = nil
         }
     }
 

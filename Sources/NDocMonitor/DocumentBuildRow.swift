@@ -13,33 +13,33 @@ struct DocumentBuildRow: View {
     let document: DocumentBuild
 
     var body: some View {
-        HStack(spacing: 10) {
-            // Activity indicator: spinning if lualatex is running
+        HStack(spacing: 8) {
+            // Activity indicator
             Image(systemName: document.isRunning
-                  ? "arrow.trianglehead.2.counterclockwise"
+                  ? "circle.fill"
                   : "checkmark.circle.fill")
                 .foregroundStyle(document.isRunning ? .orange : .green)
-                .font(.title3)
+                .font(.caption)
+                .frame(width: 14)
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(document.name)
-                    .font(.headline)
-
-                HStack(spacing: 4) {
-                    Text(document.isRunning ? "Run \(document.runCount)" : "Idle")
-                        .font(.subheadline)
-                        .foregroundStyle(document.isRunning ? .primary : .secondary)
-
-                    if document.runCount > 0 && !document.isRunning {
-                        Text("(\(document.runCount) run\(document.runCount == 1 ? "" : "s") completed)")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-            }
+            Text(document.name)
+                .font(.subheadline)
 
             Spacer()
+
+            // Run count — monospaced so the column doesn't jump
+            if document.isRunning {
+                Text("Run \(document.runCount)")
+                    .font(.caption.weight(.medium))
+                    .monospacedDigit()
+                    .foregroundStyle(.orange)
+            } else if document.runCount > 0 {
+                Text("\(document.runCount) run\(document.runCount == 1 ? "" : "s")")
+                    .font(.caption)
+                    .monospacedDigit()
+                    .foregroundStyle(.secondary)
+            }
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 3)
     }
 }

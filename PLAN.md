@@ -127,7 +127,7 @@ struct DocumentBuild: Identifiable {
 
 ---
 
-### Step 6: Polish the UI
+### Step 6: Polish the UI ✅
 
 **What we build**: A clean, informative panel UI.
 

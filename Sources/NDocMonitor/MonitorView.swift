@@ -23,69 +23,156 @@ import SwiftUI
 struct MonitorView: View {
     @ObservedObject var monitor: BuildMonitor
 
+    /// A timer that fires every second to update the elapsed-time display.
+    ///
+    /// **SwiftUI concept — `TimelineView`:**
+    /// We *could* use `TimelineView(.periodic(from:, by:))` for this,
+    /// but a simple `Timer.publish` into a `@State` is more explicit
+    /// and easier to understand at this stage.
+    @State private var now = Date()
+    private let clockTimer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 0) {
             if monitor.isBuildActive {
-                // Active build(s) detected
-                Image(systemName: "hammer.fill")
-                    .font(.system(size: 28))
-                    .foregroundStyle(.orange)
-
-                if monitor.documentBuilds.isEmpty {
-                    // Build detected but no latexmk processes yet
-                    // (make is still in early setup phase)
-                    Text("Build starting…")
-                        .font(.headline)
-                    ForEach(monitor.activeBuilds, id: \.makePID) { build in
-                        Text(build.repoPath)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                            .truncationMode(.head)
-                    }
-                } else {
-                    // Show each document being typeset
-                    ForEach(monitor.documentBuilds) { doc in
-                        DocumentBuildRow(document: doc)
-                    }
-                }
+                activeBuildView
             } else if let completed = monitor.lastCompletedBuild {
-                // Build just finished — show summary briefly
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 28))
-                    .foregroundStyle(.green)
-
-                Text("Build finished")
-                    .font(.headline)
-
-                ForEach(completed.documents, id: \.name) { doc in
-                    HStack(spacing: 4) {
-                        Text(doc.name)
-                            .font(.subheadline)
-                        Spacer()
-                        Text("\(doc.totalRuns) run\(doc.totalRuns == 1 ? "" : "s")")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
+                completedBuildView(completed)
             } else {
-                // Idle state
-                Image(systemName: "doc.text.magnifyingglass")
-                    .font(.system(size: 32))
-                    .foregroundStyle(.secondary)
-
-                Text("No build active")
-                    .font(.headline)
-
-                Text("n-doc monitor is watching for builds.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                idleView
             }
         }
-        .padding(20)
-        .frame(minWidth: 280)
+        .padding(16)
+        .frame(minWidth: 300)
         .onAppear {
             monitor.startMonitoring()
         }
+        .onReceive(clockTimer) { self.now = $0 }
+    }
+
+    // MARK: - Active build
+
+    /// **SwiftUI concept — extracted computed views:**
+    /// Breaking the body into `@ViewBuilder` properties keeps
+    /// each section readable and avoids deeply nested closures.
+    @ViewBuilder
+    private var activeBuildView: some View {
+        // Header
+        HStack(spacing: 8) {
+            Image(systemName: "hammer.fill")
+                .font(.title2)
+                .foregroundStyle(.orange)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Build in progress")
+                    .font(.headline)
+
+                if let started = monitor.buildStartedAt {
+                    Text(elapsedString(from: started))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .monospacedDigit()
+                }
+            }
+
+            Spacer()
+
+            // Document count badge
+            Text("\(monitor.documentBuilds.count)")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.white)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(Capsule().fill(.orange))
+        }
+        .padding(.bottom, 10)
+
+        if monitor.documentBuilds.isEmpty {
+            // make is running but no latexmk yet
+            Text("Waiting for documents…")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .padding(.vertical, 8)
+        } else {
+            Divider()
+
+            // Document list, sorted alphabetically
+            let sorted = monitor.documentBuilds.sorted { $0.name < $1.name }
+            ForEach(sorted) { doc in
+                DocumentBuildRow(document: doc)
+            }
+        }
+    }
+
+    // MARK: - Completed build
+
+    @ViewBuilder
+    private func completedBuildView(_ completed: CompletedBuild) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.title2)
+                .foregroundStyle(.green)
+
+            Text("Build finished")
+                .font(.headline)
+
+            Spacer()
+        }
+        .padding(.bottom, 10)
+
+        Divider()
+
+        let sorted = completed.documents.sorted { $0.name < $1.name }
+        ForEach(sorted, id: \.name) { doc in
+            HStack {
+                Image(systemName: "checkmark")
+                    .font(.caption)
+                    .foregroundStyle(.green)
+
+                Text(doc.name)
+                    .font(.subheadline)
+
+                Spacer()
+
+                Text("\(doc.totalRuns) run\(doc.totalRuns == 1 ? "" : "s")")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+            }
+            .padding(.vertical, 2)
+        }
+    }
+
+    // MARK: - Idle
+
+    @ViewBuilder
+    private var idleView: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "doc.text.magnifyingglass")
+                .font(.system(size: 28))
+                .foregroundStyle(.tertiary)
+
+            Text("No build active")
+                .font(.headline)
+                .foregroundStyle(.secondary)
+
+            Text("Watching for n-doc builds…")
+                .font(.caption)
+                .foregroundStyle(.tertiary)
+        }
+        .padding(.vertical, 8)
+    }
+
+    // MARK: - Helpers
+
+    /// Format elapsed time as "1m 23s" or "45s".
+    private func elapsedString(from start: Date) -> String {
+        let seconds = Int(now.timeIntervalSince(start))
+        if seconds < 60 {
+            return "\(seconds)s"
+        }
+        let minutes = seconds / 60
+        let secs = seconds % 60
+        return "\(minutes)m \(secs)s"
     }
 }
