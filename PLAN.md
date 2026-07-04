@@ -110,7 +110,7 @@ struct DocumentBuild: Identifiable {
 
 ---
 
-### Step 5: Count lualatex runs per document
+### Step 5: Count lualatex runs per document ✅
 
 **What we build**: Track how many times lualatex has been spawned for each latexmk process. Since lualatex runs sequentially (one finishes before the next starts), we need to detect new lualatex PIDs appearing over successive polling cycles.
 

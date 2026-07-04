@@ -99,6 +99,16 @@ final class BuildMonitor: ObservableObject {
         trackedDocuments = trackedDocuments.filter { activePIDs.contains($0.key) }
     }
 
+    /// Feed a list of document snapshots directly (for testing).
+    ///
+    /// This bypasses the live process scan and lets tests simulate
+    /// successive polling cycles with controlled data.
+    func applyDocumentSnapshots(_ snapshots: [DocumentBuild]) {
+        documentBuilds = mergeSnapshots(snapshots)
+        let activePIDs = Set(documentBuilds.map(\.id))
+        trackedDocuments = trackedDocuments.filter { activePIDs.contains($0.key) }
+    }
+
     /// Merge fresh snapshots with previously tracked state.
     ///
     /// **Key insight — state diffing:**

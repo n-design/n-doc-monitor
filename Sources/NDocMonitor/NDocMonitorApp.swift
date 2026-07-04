@@ -25,11 +25,23 @@ struct NDocMonitorApp: App {
     /// The shared build monitor — created once, lives for the app's lifetime.
     @StateObject private var monitor = BuildMonitor()
 
+    /// The SF Symbol icon changes based on build state:
+    /// - Idle: `doc.text.magnifyingglass` (outline)
+    /// - Building: `doc.text.magnifyingglass` with a filled style
+    ///   isn't available, so we switch to `hammer.fill`.
+    ///
+    /// **SwiftUI concept — computed properties in the body:**
+    /// `MenuBarExtra` accepts a `systemImage` string, so we use a
+    /// computed property to pick the right icon dynamically.
+    private var menuBarIcon: String {
+        monitor.isBuildActive ? "hammer.fill" : "doc.text.magnifyingglass"
+    }
+
     var body: some Scene {
         // MenuBarExtra creates a menu-bar-only app.
         // .window style gives us a detachable panel (as opposed to a
         // pull-down menu).
-        MenuBarExtra("n-doc monitor", systemImage: "doc.text.magnifyingglass") {
+        MenuBarExtra("n-doc monitor", systemImage: menuBarIcon) {
             MonitorView(monitor: monitor)
         }
         .menuBarExtraStyle(.window)
