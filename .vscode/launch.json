@@ -1,0 +1,24 @@
+{
+    "configurations": [
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:n-doc-monitor-app}",
+            "name": "Debug NDocMonitor",
+            "target": "NDocMonitor",
+            "configuration": "debug",
+            "preLaunchTask": "swift: Build Debug NDocMonitor"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:n-doc-monitor-app}",
+            "name": "Release NDocMonitor",
+            "target": "NDocMonitor",
+            "configuration": "release",
+            "preLaunchTask": "swift: Build Release NDocMonitor"
+        }
+    ]
+}

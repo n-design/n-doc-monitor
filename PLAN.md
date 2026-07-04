@@ -30,7 +30,7 @@ Build a macOS menu bar app in SwiftUI that monitors native n-doc builds by walki
 
 Each step is incremental and introduces specific SwiftUI / macOS concepts.
 
-### Step 1: Create the Xcode project skeleton
+### Step 1: Create the Xcode project skeleton ✅
 
 **What we build**: A minimal SwiftUI app that shows an icon in the macOS menu bar. Clicking it opens a popover/panel with static placeholder text ("No build active").
 
