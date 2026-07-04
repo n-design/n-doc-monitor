@@ -27,6 +27,12 @@ struct MonitorView: View {
     /// `nil` when running inside `MenuBarExtra` (position is automatic).
     var onResetPosition: (() -> Void)? = nil
 
+    /// Callback to show the About panel.
+    var onShowAbout: (() -> Void)? = nil
+
+    /// Callback to open the Settings window.
+    var onShowSettings: (() -> Void)? = nil
+
     /// Callback to quit the application.
     /// `nil` hides the quit button (e.g. in tests or previews).
     var onQuit: (() -> Void)? = nil
@@ -50,12 +56,10 @@ struct MonitorView: View {
                 idleView
             }
 
-            // Toolbar: reset position + quit
-            if onResetPosition != nil || onQuit != nil {
-                Divider()
-                    .padding(.top, 8)
-                toolbarView
-            }
+            // Toolbar: always show (has About, Settings, Quit)
+            Divider()
+                .padding(.top, 8)
+            toolbarView
         }
         .padding(16)
         .frame(minWidth: 300)
@@ -188,25 +192,43 @@ struct MonitorView: View {
     /// toolbar adapts to different hosting contexts.
     @ViewBuilder
     private var toolbarView: some View {
-        HStack {
+        HStack(spacing: 12) {
             if let resetAction = onResetPosition {
                 Button(action: resetAction) {
-                    Label("Reset Position", systemImage: "arrow.uturn.backward")
-                        .font(.caption)
+                    Image(systemName: "arrow.uturn.backward")
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.secondary)
+                .help("Reset window position")
+            }
+
+            if let aboutAction = onShowAbout {
+                Button(action: aboutAction) {
+                    Image(systemName: "info.circle")
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.secondary)
+                .help("About n-doc monitor")
+            }
+
+            if let settingsAction = onShowSettings {
+                Button(action: settingsAction) {
+                    Image(systemName: "gear")
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.secondary)
+                .help("Settings")
             }
 
             Spacer()
 
             if let quitAction = onQuit {
                 Button(action: quitAction) {
-                    Label("Quit", systemImage: "xmark.circle")
-                        .font(.caption)
+                    Image(systemName: "xmark.circle")
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.secondary)
+                .help("Quit n-doc monitor")
             }
         }
         .padding(.top, 6)

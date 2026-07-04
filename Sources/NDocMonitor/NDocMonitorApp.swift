@@ -32,7 +32,14 @@ struct NDocMonitorApp: App {
     var body: some Scene {
         // No visible scenes — everything is managed by the
         // StatusItemController via the AppDelegate.
-        Settings { EmptyView() }
+        //
+        // **Step 8 — Settings scene:**
+        // The `Settings` scene creates a standard macOS Preferences
+        // window.  It's accessible programmatically via
+        // `NSApp.sendAction(Selector(("showSettingsWindow:")))`.
+        Settings {
+            SettingsView()
+        }
     }
 }
 
@@ -60,6 +67,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             MonitorView(
                 monitor: self?.monitor ?? BuildMonitor(),
                 onResetPosition: { self?.statusItemController.resetPanelPosition() },
+                onShowAbout: { Self.showAboutPanel() },
+                onShowSettings: { Self.showSettingsWindow() },
                 onQuit: { NSApp.terminate(nil) }
             )
         }
@@ -77,5 +86,44 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.statusItemController.updateIcon(icon)
             }
             .store(in: &cancellables)
+    }
+
+    // MARK: - About & Settings
+
+    /// Show the standard macOS About panel.
+    ///
+    /// **AppKit concept — `orderFrontStandardAboutPanel`:**
+    /// Every macOS app has a built-in About panel that shows the
+    /// app name, version, and copyright.  It reads from the app's
+    /// `Info.plist` (or we can pass custom options).
+    ///
+    /// We also temporarily switch to `.regular` activation policy
+    /// so the About panel can appear in front of other apps.
+    static func showAboutPanel() {
+        NSApp.activate(ignoringOtherApps: true)
+        NSApp.orderFrontStandardAboutPanel(options: [
+            .applicationName: "n-doc monitor",
+            .applicationVersion: "1.0.0",
+            .version: "1",
+            .credits: NSAttributedString(
+                string: "A macOS menu bar app for monitoring n-doc LaTeX builds.",
+                attributes: [
+                    .font: NSFont.systemFont(ofSize: 11),
+                    .foregroundColor: NSColor.secondaryLabelColor,
+                ]
+            ),
+        ])
+    }
+
+    /// Open the SwiftUI Settings window.
+    ///
+    /// **Step 8 — opening Settings programmatically:**
+    /// SwiftUI's `Settings` scene creates a window that responds to
+    /// the `showSettingsWindow:` selector.  We send that action to
+    /// the first responder, which lets the SwiftUI framework handle
+    /// presenting it.
+    static func showSettingsWindow() {
+        NSApp.activate(ignoringOtherApps: true)
+        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
     }
 }

@@ -161,7 +161,7 @@ struct DocumentBuild: Identifiable {
 
 ---
 
-### Step 8: App lifecycle and distribution
+### Step 8: App lifecycle and distribution ✅
 
 **What we build**: Final touches for a proper macOS app.
 
