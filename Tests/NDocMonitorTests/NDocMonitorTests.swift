@@ -15,7 +15,8 @@ import SwiftUI
 final class NDocMonitorTests: XCTestCase {
 
     @MainActor func testMonitorViewCreation() {
-        let view = MonitorView()
+        let monitor = BuildMonitor()
+        let view = MonitorView(monitor: monitor)
         // If we get here without crashing, the view's body was synthesized
         // successfully.
         _ = view.body

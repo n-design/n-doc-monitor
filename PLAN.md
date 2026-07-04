@@ -67,7 +67,7 @@ Each step is incremental and introduces specific SwiftUI / macOS concepts.
 
 ---
 
-### Step 3: n-doc build detection
+### Step 3: n-doc build detection ✅
 
 **What we build**: Logic to find the root `make` process of an n-doc build. The scanner looks for `make` processes whose working directory contains `common/latexmkrc` (checked via `FileManager`).
 
