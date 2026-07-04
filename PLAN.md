@@ -180,14 +180,15 @@ struct DocumentBuild: Identifiable {
 
 ---
 
-### Step 9: UI Improvements
+### Step 9: UI Improvements: Floating Window
 
 **What we build**: Let the user tear the main panel off from the menu bar icon so that is a floating window.
 
 **SwiftUI concepts introduced**:
 - Tear off menu bar items to create floating windows.
+- Add button to reset the window's position to underneath the menu bar icon
 
-**Milestone**: Visually polished menu bar app with better user experience.
+**Milestone**: Tearable, floatable window for the app
 
 ---
 
@@ -199,6 +200,17 @@ struct DocumentBuild: Identifiable {
 - Final polish and testing.
 
 **Milestone**: The app gains the ability to filter processes by directory. Preferences are saved between launches.
+
+---
+
+### Step 11: UI Improvements: Configure accent color
+
+**What we build**: Let the user configure the accent color from orange to something else.
+
+**SwiftUI concepts introduced**:
+- Color picker
+
+**Milestone**: Visually polished menu bar app with better user experience.
 
 ---
 
