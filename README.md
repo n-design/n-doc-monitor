@@ -33,7 +33,11 @@ The app lives entirely in the menu bar — no Dock icon, no main window. Click t
 
 ## Installation
 
-### From DMG (to be done)
+### From DMG
+
+1. Download the latest `.dmg` from [Releases](../../releases)
+2. Open the disk image and drag **n-doc monitor** to **Applications**
+3. On first launch: right-click → **Open** (one-time Gatekeeper bypass)
 
 ### Build from source
 

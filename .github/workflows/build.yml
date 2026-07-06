@@ -1,0 +1,70 @@
+name: Build & Release DMG
+
+on:
+  push:
+    tags:
+      - 'v*'          # Trigger on version tags like v1.0.0
+  workflow_dispatch:   # Allow manual trigger from GitHub UI
+
+jobs:
+  build:
+    name: Build n-doc monitor
+    runs-on: macos-15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode 26
+        run: |
+          # List available Xcode versions and select 26.x
+          ls /Applications/ | grep Xcode
+          XCODE_PATH=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | head -1)
+          if [ -z "$XCODE_PATH" ]; then
+            echo "::warning::Xcode 26 not found, using default Xcode"
+            xcodebuild -version
+          else
+            sudo xcode-select -s "$XCODE_PATH"
+            echo "Selected: $XCODE_PATH"
+            xcodebuild -version
+          fi
+          swift --version
+
+      - name: Run tests
+        run: swift test
+
+      - name: Build .app and DMG
+        run: ./Scripts/build_app.sh --dmg
+
+      - name: Get version from tag
+        id: version
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "version=${GITHUB_REF#refs/tags/v}" >> "$GITHUB_OUTPUT"
+            echo "tag=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=dev" >> "$GITHUB_OUTPUT"
+            echo "tag=dev-$(date +%Y%m%d-%H%M%S)" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Upload DMG artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: n-doc-monitor-${{ steps.version.outputs.version }}
+          path: build/*.dmg
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: n-doc monitor ${{ steps.version.outputs.tag }}
+          draft: false
+          prerelease: false
+          files: build/*.dmg
+          body: |
+            ## n-doc monitor ${{ steps.version.outputs.tag }}
+
+            ### Installation
+            1. Download `n-doc-monitor-${{ steps.version.outputs.version }}.dmg`
+            2. Open the disk image and drag **n-doc monitor** to **Applications**
+            3. On first launch: right-click → **Open** (one-time Gatekeeper bypass)
